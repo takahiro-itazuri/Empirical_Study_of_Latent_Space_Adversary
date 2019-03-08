@@ -1,0 +1,4 @@
+data/*
+!data/*.sh
+logs
+__pycache__
