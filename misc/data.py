@@ -230,7 +230,7 @@ def download_dataset(name):
 	elif name == 'lsun':
 		category_list = ['bedroom', 'bridge', 'church_outdoor', 'classroom', 'conference_room', 'dining_room', 'kitchen', 'living_room', 'restaurant', 'tower']
 
-		download dataset
+		# download dataset
 		os.makedirs(root, exist_ok=True)
 		for category in category_list:
 			if not os.path.exists(os.path.join(root, '{}_train_lmdb.zip'.format(category))):
