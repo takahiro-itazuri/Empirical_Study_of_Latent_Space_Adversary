@@ -72,6 +72,12 @@ class BaseOptions():
 	def parse(self):
 		opt = self.gather_options()
 
+		# input image size
+		if opt.arch == 'lenet':
+			opt.input_size = 32
+		else:
+			opt.input_size = 224
+
 		# GPU
 		if opt.cuda and torch.cuda.is_available():
 			torch.backends.cudnn.benchmark = True
