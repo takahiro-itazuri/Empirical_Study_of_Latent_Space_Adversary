@@ -9,8 +9,8 @@ sys.path.append(base)
 from adversarial_examples.utils import get_eps, get_alpha
 
 
-model_names = ['alexnet', 'vgg16', 'vgg16_bn', 'vgg19', 'vgg19_bn', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
-dataset_names = ['mnist', 'svhn', 'cifar10', 'cifar100', 'stl10', 'imagenet']
+model_names = ['lenet', 'alexnet', 'vgg16', 'vgg16_bn', 'vgg19', 'vgg19_bn', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
+dataset_names = ['mnist', 'svhn', 'cifar10', 'cifar100', 'lsun', 'imagenet']
 
 
 class BaseOptions():
