@@ -15,6 +15,7 @@ import torchvision
 from torch import nn, optim
 from torch.utils.data import DataLoader
 from torch.autograd import grad
+from torchvision import transforms
 from torchvision.utils import make_grid, save_image
 from tensorboardX import SummaryWriter
 
@@ -32,8 +33,8 @@ def main():
 	writer = SummaryWriter(os.path.join(opt.log_dir, 'runs'))
 
 	# dataset
-	dataset = get_dataset(opt.dataset, train=True, input_size=opt.image_size)
-    labels = get_labels(opt.dataset)
+	dataset = get_dataset(opt.dataset, train=True, input_size=opt.image_size, normalize=False, augment=False)
+	labels = get_labels(opt.dataset)
 	opt.num_classes = len(labels)
 	loader = DataLoader(dataset, batch_size=opt.batch_size, shuffle=True, num_workers=opt.num_workers)
 
@@ -51,8 +52,8 @@ def main():
 
 	if opt.resume:
 		opt.last_epoch = load_checkpoint(G, C, G_optimizer, C_optimizer, os.path.join(opt.log_dir, 'checkpoint.pth.tar'))
-    else:
-        opt.last_epoch = 0
+	else:
+		opt.last_epoch = 0
 
 	# fixed z & t
 	num_classes_for_log = min(opt.num_classes, 10)
@@ -85,16 +86,14 @@ def main():
 			if x_real.size(0) != opt.batch_size:
 				break
 
-			x_real = x_real.to(opt.device)
+			x_real = normalize(x_real.to(opt.device), None, opt.device)
 			z = torch.randn((opt.batch_size, opt.nz)).to(opt.device)
 			if opt.condition:
 				t = t.to(opt.device)
 
-			G.train()
-			C.train()
-
 			# === update C network === #
-			C_optimizer.zero_grad()
+			G.eval()
+			C.train()
 
 			if opt.condition:
 				C_real, y_real = C(x_real)
@@ -135,6 +134,8 @@ def main():
 				C_loss = -EMD + GP + AC_loss
 			else:
 				C_loss = -EMD + GP
+			
+			C_optimizer.zero_grad()
 			C_loss.backward()
 			C_optimizer.step()
 
@@ -144,7 +145,7 @@ def main():
 
 				# === update G === #
 				G.train()
-				G_optimizer.zero_grad()
+				C.eval()
 
 				if opt.condition:
 					x_fake = G(z, t)
@@ -158,6 +159,7 @@ def main():
 					C_fake = torch.mean(C_fake)
 					G_loss = -C_fake
 
+				G_optimizer.zero_grad()
 				G_loss.backward()
 				G_optimizer.step()
 
@@ -168,37 +170,38 @@ def main():
 					running_AC_loss += AC_loss.item()
 				commandline_output = ''
 
-				timer.set_step(itr)
+				timer.step()
 				elapsed_time = timer.get_elapsed_time()
 				estimated_time = timer.get_estimated_time()
 
 				if itr % 10 == 0:
 					samples = G(fix_z, fix_t).detach()
-					save_image(unnormalize(samples, opt.dataset, opt.device), os.path.join(opt.log_dir, 'latest.png'), nrow=num_classes_for_log)
+					save_image(unnormalize(samples, None, opt.device), os.path.join(opt.log_dir, 'latest.png'), nrow=num_classes_for_log)
 					commandline_output = '\r\033[K[itr {:d}] EMD: {:.4f}'.format(int(itr), EMD.item())
 					if opt.condition:
 						commandline_output += ', AC_loss: {:.4f}'.format(AC_loss.item())
 					commandline_output += ', elapsed time: {}, estimated time: {}'.format(elapsed_time, estimated_time)
 
-				if itr % 1000 == 0:
-					commandline_output = '\r\033[K[itr {:d}] EMD: {:.4f}'.format(int(itr), running_EMD / 1000)
-					if writer is not None:
-						writer.add_scalars('Loss', {'EMD': running_EMD / 1000}, global_step=itr)
-						writer.add_image('generated samples', make_grid(unnormalize(samples, opt.dataset, opt.device), nrow=num_classes_for_log), global_step=itr)
-					running_EMD = 0.0
-					if opt.condition:
-						commandline_output += ', AC_loss: {:.4f}'.format(running_AC_loss / 1000)
+					if itr % 1000 == 0:
+						save_image(unnormalize(samples, None, opt.device), os.path.join(opt.log_dir, '{:06d}itr.png'.format(int(itr))), nrow=num_classes_for_log)
+						commandline_output = '\r\033[K[itr {:d}] EMD: {:.4f}'.format(int(itr), running_EMD / 1000)
 						if writer is not None:
-							writer.add_scalars('Loss', {'AC_loss': running_AC_loss / 1000}, global_step=itr)
-						running_AC_loss = 0.0
-					commandline_output += ', elapsed time: {}, estimated time: {}\n'.format(elapsed_time, estimated_time)
+							writer.add_scalars('Loss', {'EMD': running_EMD / 1000}, global_step=itr)
+							writer.add_image('generated samples', make_grid(unnormalize(samples, None, opt.device), nrow=num_classes_for_log), global_step=itr)
+						running_EMD = 0.0
+						if opt.condition:
+							commandline_output += ', AC_loss: {:.4f}'.format(running_AC_loss / 1000)
+							if writer is not None:
+								writer.add_scalars('Loss', {'AC_loss': running_AC_loss / 1000}, global_step=itr)
+							running_AC_loss = 0.0
+						commandline_output += ', elapsed time: {}, estimated time: {}\n'.format(elapsed_time, estimated_time)
+
+					del samples
 
 				sys.stdout.write(commandline_output)
 				sys.stdout.flush()
 
 				# save model
-				if itr % 1000 == 0:
-					save_image(unnormalize(samples, opt.dataset, opt.device), os.path.join(opt.log_dir, '{:06d}itr.png'.format(int(itr))), nrow=num_classes_for_log)
 				save_checkpoint(G, C, G_optimizer, C_optimizer, itr, os.path.join(opt.log_dir, 'checkpoint.pth.tar'))
 
 			if itr == opt.num_itrs:
@@ -207,9 +210,8 @@ def main():
 		if itr == opt.num_itrs:
 			break
 
-
-    save_model(G, os.path.join(opt.log_dir, 'G_weight_final.pth'))
-    save_model(C, os.path.join(opt.log_dir, 'C_weight_final.pth'))
+	save_model(G, os.path.join(opt.log_dir, 'G_weight_final.pth'))
+	save_model(C, os.path.join(opt.log_dir, 'C_weight_final.pth'))
 
 
 if __name__ == '__main__':

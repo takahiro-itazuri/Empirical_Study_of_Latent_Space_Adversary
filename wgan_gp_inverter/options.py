@@ -9,8 +9,6 @@ class BaseOptions():
 		self.initialized = False
 
 	def initialize(self, parser):
-		# model
-		parser.add_argument('--condition', type=int, default=1, help='0: without condition, 1: with condition')
 		# dataset
 		parser.add_argument('-d', '--dataset', type=str, required=True, help='mnist | svhn | cifar10 | lsun')
 		# log
@@ -64,7 +62,11 @@ class BaseOptions():
 		if opt.dataset == 'mnist':
 			opt.nz = 64
 			opt.nc = 1
-			opt.nf = 32
+			opt.nf = 64
+		elif opt.dataset == 'svhn':
+			opt.nz = 64
+			opt.nc = 3
+			opt.nf = 64
 		else:
 			opt.nz = 128
 			opt.nc = 3
@@ -101,6 +103,10 @@ class TrainOptions(BaseOptions):
 	def parse(self):
 		opt = BaseOptions.parse(self)
 
+		opt.lambda_z = (opt.image_size**2) / opt.nz
+		if opt.dataset != 'mnist': # color image
+			opt.lambda_z = opt.lambda_z * 3
+
 		self.opt = opt
 		self.print_options(opt)
 		return self.opt
@@ -115,7 +121,7 @@ class TestOptions(BaseOptions):
 		parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 		# log
 		parser.add_argument('--output_size', type=int, default=None, help='output image size')
-		parser.add_argument('--num_samples', type=int, required=True, help='number of samples to generate adversarial examples')
+		parser.add_argument('-N', '--num_samples', type=int, required=True, help='number of samples to generate adversarial examples')
 		return parser
 	
 	def parse(self):
