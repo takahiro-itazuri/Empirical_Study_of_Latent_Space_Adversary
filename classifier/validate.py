@@ -19,7 +19,7 @@ def main():
 	opt = ValidateOptions().parse()
 
 	# dataset
-	dataset = get_dataset(opt.dataset, train=opt.use_train)	
+	dataset = get_dataset(opt.dataset, train=opt.use_train, input_size=opt.input_size)	
 	loader = DataLoader(dataset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
 	labels = get_labels(opt.dataset)
 	opt.num_classes = len(labels)

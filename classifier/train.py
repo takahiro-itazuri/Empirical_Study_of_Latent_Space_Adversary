@@ -22,8 +22,8 @@ def main():
 	opt = TrainOptions().parse()
 
 	# dataset
-	train_dataset = get_dataset(opt.dataset, train=True, num_samples=opt.num_samples)
-	val_dataset = get_dataset(opt.dataset, train=False)
+	train_dataset = get_dataset(opt.dataset, train=True, input_size=opt.input_size, num_samples=opt.num_samples)
+	val_dataset = get_dataset(opt.dataset, train=False, input_size=opt.input_size)
 	train_loader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=opt.num_workers, pin_memory=True)
 	val_loader = DataLoader(val_dataset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers, pin_memory=True)
 	labels = get_labels(opt.dataset)
