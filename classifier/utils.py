@@ -179,9 +179,9 @@ def get_lr(arch):
 	Args:
 	arch (str): model architecture name
 	"""
-	if arch in ['vgg16_bn', 'vgg19_bn', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']:
+	if arch in ['lenet', 'alexnet', 'vgg16_bn', 'vgg19_bn', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']:
 		return 0.1
-	elif arch in ['alexnet', 'vgg16', 'vgg19']:
+	elif arch in ['vgg16', 'vgg19']:
 		return 0.01
 	else:
 		raise NotImplementedError
