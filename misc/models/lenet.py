@@ -58,11 +58,11 @@ class LeNet(nn.Module):
 		)
 
 	def forward(self, x):
-		out = self.features(x)
-		out = self.avgpool(x)
-		out = out.view(out.size(0), -1)
-		out = self.classifier(out)
-		return out
+		x = self.features(x)
+		x = self.avgpool(x)
+		x = x.view(x.size(0), -1)
+		x = self.classifier(x)
+		return x
 
 
 def lenet(num_classes=100, use_bn=True):
