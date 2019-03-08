@@ -1,5 +1,5 @@
-# Adversarial Examples Projects
-This is a base repository of adversarial examples projects.
+# Empirical Study of Latent-Space Adversary
+This repository provides implementations of "Empirical Study of Latent-Space Adversary".
 
 ## Setup
 ### 1. Install Packages
