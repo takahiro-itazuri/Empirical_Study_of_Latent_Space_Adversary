@@ -80,7 +80,7 @@ def normalize(x, name, device='cpu'):
 	"""
 	mean, std = get_dataset_stats(name, device)
 	
-	x.sub_(mean[None, :, None, None]).div_(std[None, :, None, None])
+	x.sub(mean[None, :, None, None]).div(std[None, :, None, None])
 	return x
 
 
@@ -95,7 +95,7 @@ def unnormalize(x, name, device='cpu'):
 	"""
 	mean, std = get_dataset_stats(name, device)
 
-	x.mul_(std[None, :, None, None]).add_(mean[None, :, None, None])
+	x.mul(std[None, :, None, None]).add(mean[None, :, None, None])
 	return x
 
 
