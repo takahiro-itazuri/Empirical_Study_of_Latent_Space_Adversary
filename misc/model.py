@@ -18,9 +18,7 @@ __all__ = [
 def get_classifier(name, num_classes=1000, pretrained=False, inplace=True, use_bn=True):
 
 	if pretrained:
-		if name == 'alexnet':
-			model = torchvision.models.alexnet(True)
-		elif name == 'vgg16':
+		if name == 'vgg16':
 			model = torchvision.models.vgg16(True)
 		elif name == 'vgg16_bn':
 			model = torchvision.models.vgg16_bn(True)
@@ -53,7 +51,7 @@ def get_classifier(name, num_classes=1000, pretrained=False, inplace=True, use_b
 		if name == 'lenet':
 			model = lenet(num_classes=num_classes, use_bn=use_bn)
 		if name == 'alexnet':
-			model = alexnet_v1(num_classes=num_classes, use_bn=use_bn)
+			model = alexnet_v2(num_classes=num_classes, use_bn=use_bn)
 		elif name == 'vgg16':
 			model = torchvision.models.vgg16(False, num_classes=num_classes)
 		elif name == 'vgg16_bn':
