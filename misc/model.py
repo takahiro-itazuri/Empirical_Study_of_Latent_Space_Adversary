@@ -50,7 +50,7 @@ def get_classifier(name, num_classes=1000, pretrained=False, inplace=True, use_b
 	else:
 		if name == 'lenet':
 			model = lenet(num_classes=num_classes, use_bn=use_bn)
-		if name == 'alexnet':
+		elif name == 'alexnet':
 			model = alexnet_v2(num_classes=num_classes, use_bn=use_bn)
 		elif name == 'vgg16':
 			model = torchvision.models.vgg16(False, num_classes=num_classes)
