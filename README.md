@@ -8,17 +8,23 @@ pip install -r requirements.txt
 ```
 
 ### 2. Prepare Datasets
-#### ImageNet
-Download the [ImageNet dataset](http://image-net.org/download) (ILSVRC2012_img_train.tar & ILSVRC2012_img_val.tar) into ImageNet directory (data/imagenet) and move validation images to labeled subfolders.
+[MNIST](http://yann.lecun.com/exdb/mnist/), [SVHN](http://ufldl.stanford.edu/housenumbers/), [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html), [CIFAR-100](https://www.cs.toronto.edu/~kriz/cifar.html), [LSUN](https://www.yf.io/p/lsun) can be downloaded by command.
 ```bash
-cd data
-mkdir imagenet
-bash extract.sh # extract tar files
-bash valprep.sh # move validation images to 
-```
-
-#### MNIST, SVHN, CIFAR-10, CIFAR-100, STL-10, LSUN
-```bash
+cd ${root}
 python -c "from misc import *; download_all_dataset();"
 ```
+
+### 3. Train Classifiers
+
+
+### 4. Train GANs
+
+
+### 5. Generate Adversarial Examples
+
+
+### 6. Calculate Mean Curvatures
+
+
+### 7. Adversarial Fine-tuning
 
