@@ -1,0 +1,10 @@
+0	bedroom
+1	bridge
+2	church_outdoor
+3	classroom
+4	conference_room
+5	dining_room
+6	kitchen
+7	living_room
+8	restauranT
+9	tower
