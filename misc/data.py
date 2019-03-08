@@ -156,7 +156,7 @@ def get_dataset(name, train, input_size=224, normalize=True, augment=True, num_s
 	if name == 'mnist':
 		dataset = torchvision.datasets.MNIST(root, train=train, download=True, transform=transform)
 	elif name == 'svhn':
-		dataset = torchvision.datasets.SVHN(root, split='train' if train else 'test', download=True, trasnform=transform)
+		dataset = torchvision.datasets.SVHN(root, split='train' if train else 'test', download=True, transform=transform)
 	elif name == 'cifar10':
 		dataset = torchvision.datasets.CIFAR10(root, train=train, download=True, transform=transform)
 	elif name == 'cifar100':
