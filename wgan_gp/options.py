@@ -97,13 +97,13 @@ class TrainOptions(BaseOptions):
 		# log
 		parser.add_argument('--resume', action='store_true', default=False, help='enable resume mode')
 		return parser
+	
+	def parse(self):
+		opt = BaseOptions.parse(self)
 
-    def parse(self):
-        opt = BaseOptions.parse(self)
-
-        self.opt = opt
-        self.print_options(opt)
-        return self.opt
+		self.opt = opt
+		self.print_options(opt)
+		return self.opt
 
 
 class TestOptions(BaseOptions):
@@ -115,15 +115,15 @@ class TestOptions(BaseOptions):
 		parser.add_argument('--batch_size', type=int, default=128, help='batch size')
 		# log
 		parser.add_argument('--output_size', type=int, default=None, help='output image size')
-		parser.add_argument('-N', '--num_samples', type=int, required=True, help='number of samples to generate adversarial examples')
+		parser.add_argument('--num_samples', type=int, required=True, help='number of samples to generate adversarial examples')
 		return parser
-
-    def parse(self):
-        opt = BaseOptions.parse(self)
+	
+	def parse(self):
+		opt = BaseOptions.parse(self)
 
 		if opt.output_size == None:
 			opt.output_size = opt.image_size
 
-        self.opt = opt
-        self.print_options(opt)
-        return self.opt
+		self.opt = opt
+		self.print_options(opt)
+		return self.opt
