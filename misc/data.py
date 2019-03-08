@@ -1,6 +1,11 @@
 import os
 import sys
 import random
+import urllib
+import zipfile
+import lmdb
+import cv2
+import numpy as np
 
 import torch
 import torchvision
@@ -17,7 +22,8 @@ __all__ = [
 	'get_dataset_stats',
 	'normalize',
 	'unnormalize',
-	'shuffle_dataset'
+	'shuffle_dataset',
+	'download_dataset'
 ]
 
 
@@ -42,7 +48,7 @@ stds = {
 
 
 def check_dataset(name):
-	if name in ['mnist', 'svhn', 'cifar10', 'cifar100', 'stl10', 'imagenet']:
+	if name in ['mnist', 'svhn', 'cifar10', 'cifar100', 'stl10', 'lsun', 'imagenet']:
 		return True
 	else:
 		return False
@@ -162,8 +168,8 @@ def get_dataset(name, train, input_size=224, normalize=True, augment=True, num_s
 	elif name == 'cifar100':
 		dataset = torchvision.datasets.CIFAR100(root, train=train, download=True, transform=transform)
 	elif name == 'stl10':
-		dataset = torchvision.datasets.STL10(root, split='train' if train else 'test', download=True, transform=transform)
-	elif name == 'imagenet':
+		dataset = torchvision.datasets.STL10(root, split='train' if train else 'test', download=True, transform=transform)		
+	elif name in ['lsun', 'imagenet']:
 		root = os.path.join(root, 'train' if train else 'val')
 		dataset = torchvision.datasets.ImageFolder(root, transform=transform)
 
@@ -181,3 +187,83 @@ def shuffle_dataset(dataset, seed=0):
 	indices = list(range(len(dataset)))
 	random.shuffle(indices)
 	return Subset(dataset, indices)
+
+
+def download_dataset(name):
+	if not check_dataset(name):
+		raise NotImplementedError
+
+	root = os.path.join(data_root, name)
+
+	# === MNIST === #
+	if name == 'mnist':
+		dataset = torchvision.datasets.MNIST(root, train=True, download=True)
+		dataset = torchvision.datasets.MNIST(root, train=False, download=True)
+		del dataset
+
+	# === SVHN === #
+	elif name == 'svhn':
+		dataset = torchvision.datasets.SVHN(root, split='train', download=True)
+		dataset = torchvision.datasets.SVHN(root, split='test', download=True)
+		del dataset
+
+	# === CIFAR-10 === #
+	elif name == 'cifar10':
+		dataset = torchvision.datasets.CIFAR10(root, train=True, download=True)
+		dataset = torchvision.datasets.CIFAR10(root, train=False, download=True)
+		del dataset
+
+	# === CIFAR-100 === #
+	elif name == 'cifar100':
+		dataset = torchvision.datasets.CIFAR100(root, train=True, download=True)
+		dataset = torchvision.datasets.CIFAR100(root, train=False, download=True)
+		del dataset
+
+	# === LSUN === #
+	elif name == 'lsun':
+		category_list = ['bedroom', 'bridge', 'church_outdoor', 'classroom', 'conference_room', 'dining_room', 'kitchen', 'living_room', 'restaurant', 'tower']
+
+		download dataset
+		os.makedirs(root, exist_ok=True)
+		for category in category_list:
+			if not os.path.exists(os.path.join(root, '{}_train_lmdb.zip'.format(category))):
+				url = 'http://dl.yf.io/lsun/scenes/{}_train_lmdb.zip'.format(category)
+				urllib.request.urlretrieve(url, os.path.join(root, '{}_train_lmdb.zip'.format(category)))
+
+		# extract zip file
+		for category in category_list:
+			if not os.path.exists(os.path.join(root, '{}_train_lmdb'.format(category))):
+				with zipfile.ZipFile(os.path.join(root, '{}_train_lmdb.zip'.format(category))) as z:
+					z.extractall(root)
+
+		for c in range(len(category_list)):
+			os.makedirs(os.path.join(root, 'train', '{:03d}'.format(c)), exist_ok=True)
+			os.makedirs(os.path.join(root, 'val', '{:03d}'.format(c)), exist_ok=True)
+	
+		# save images
+		for category_idx, category in enumerate(category_list):
+			img_idx = 0
+
+			env = lmdb.open(os.path.join(root, '{}_train_lmdb'.format(category)), max_readers=126, readonly=True)
+			with env.begin(write=False) as txn:
+				cursor = txn.cursor()
+				print('{}'.format(category))
+
+				# train
+				for key, val in cursor:
+					img = cv2.imdecode(np.fromstring(val, dtype=np.uint8), 1)
+					# img = cv2.resize(img, (256, 256))
+					img = cv2.resize(img, (64, 64))
+					
+					if img_idx < 100000:
+						path = os.path.join(root, 'train', '{:03d}'.format(category_idx), '{:08d}.png'.format(category_idx * 100000 + img_idx))					
+					elif img_idx < 110000:
+						path = os.path.join(root, 'val', '{:03d}'.format(category_idx), '{:08d}.png'.format(category_idx * 10000 + (img_idx - 100000)))
+					else:
+						break
+
+					cv2.imwrite(path, img)
+					img_idx += 1
+
+			del env
+
