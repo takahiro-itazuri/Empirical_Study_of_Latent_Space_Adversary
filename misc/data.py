@@ -46,9 +46,11 @@ stds = {
 	'imagenet' : [0.229, 0.224, 0.225]
 }
 
+dataset_list = ['mnist', 'svhn', 'cifar10', 'cifar100', 'stl10', 'lsun', 'imagenet']
+
 
 def check_dataset(name):
-	if name in ['mnist', 'svhn', 'cifar10', 'cifar100', 'stl10', 'lsun', 'imagenet']:
+	if name in dataset_list:
 		return True
 	else:
 		return False
@@ -187,6 +189,11 @@ def shuffle_dataset(dataset, seed=0):
 	indices = list(range(len(dataset)))
 	random.shuffle(indices)
 	return Subset(dataset, indices)
+
+
+def download_all_datasets():
+	for name in dataset_list:
+		download_dataset(name)
 
 
 def download_dataset(name):
