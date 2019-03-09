@@ -4,6 +4,7 @@ import sys
 import torch
 import torchvision
 from torch import nn
+from torchvision.models.resnet import BasicBlock, Bottleneck
 
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 sys.path.append(base)
@@ -11,7 +12,8 @@ from misc.models import *
 
 
 __all__ = [
-	'get_classifier'
+	'get_classifier',
+	'replace_relu_with_softplus'
 ]
 
 
@@ -80,3 +82,36 @@ def get_classifier(name, num_classes=1000, pretrained=False, inplace=True, use_b
 	return model
 
 
+def replace_relu_with_softplus(model, beta=100.0, threshold=10.0):
+	"""
+	Replace all ReLU activations in ``model`` with Softplus activations.
+
+	Args:
+	model (nn.Module): model
+	"""
+	relu_list = []
+	for k, m in model.named_modules():
+		if isinstance(m, nn.ReLU):
+			relu_list.append(k)
+	# print(relu_list)
+
+	module = model._modules
+	for name in relu_list:
+		splited_name = name.split('.')
+		for n in splited_name:
+			# sys.stdout.write('[{}]'.format(n))
+			if n.isdecimal():
+				n = int(n)
+
+			if isinstance(module, BasicBlock) or isinstance(module, Bottleneck):
+				module.relu = nn.Softplus(beta=beta, threshold=threshold)
+				break
+
+			if isinstance(module[n], nn.ReLU):
+				module[n] = nn.Softplus(beta=beta, threshold=threshold)
+				break
+
+			module = module[n]
+
+		# sys.stdout.write('\n')
+		module = model._modules
