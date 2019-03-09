@@ -102,9 +102,10 @@ def main():
 	model.eval()
 
 	# make directories
-	for i in range(opt.num_classes):
-		for j in range(opt.num_classes):
-			os.makedirs(os.path.join(opt.log_dir, '{:03d}/{:03d}'.format(i, j)), exist_ok=True)
+	if opt.save_image:
+		for i in range(opt.num_classes):
+			for j in range(opt.num_classes):
+				os.makedirs(os.path.join(opt.log_dir, '{:03d}/{:03d}'.format(i, j)), exist_ok=True)
 
 	cnt = 0
 	total = 0
