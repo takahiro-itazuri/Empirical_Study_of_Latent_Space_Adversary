@@ -31,8 +31,6 @@ def main():
 
 	# model
 	model = get_classifier(opt.arch, opt.num_classes, opt.pretrained).to(opt.device)
-	if opt.cuda and torch.cuda.device_count() > 1:
-		model = nn.DataParallel(model)
 
 	# optimizer
 	optimizer = optim.SGD(model.parameters(), opt.lr, momentum=opt.momentum, weight_decay=opt.wd)
@@ -43,6 +41,10 @@ def main():
 		opt.last_epoch = load_checkpoint(model, optimizer, opt.checkpoint)
 	elif opt.weight != None:
 		load_model(model, opt.weight)
+
+	# data parallel
+	if opt.cuda and torch.cuda.device_count() > 1:
+		model = nn.DataParallel(model)
 
 	# criterion
 	criterion = nn.CrossEntropyLoss()
