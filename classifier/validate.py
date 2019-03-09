@@ -26,11 +26,13 @@ def main():
 
 	# model
 	model = get_classifier(opt.arch, opt.num_classes, opt.pretrained).to(opt.device)
-	if torch.cuda.device_count() > 1:
-		model = nn.DataParallel(model)
 		
 	if opt.weight != None:
 		model.load_state_dict(torch.load(opt.weight))
+
+	# data parallel
+	if torch.cuda.device_count() > 1:
+		model = nn.DataParallel(model)
 
 	# criterion
 	criterion = nn.CrossEntropyLoss()
@@ -39,7 +41,7 @@ def main():
 	loss, acc1, acc5 = validate(model, loader, criterion, opt)
 
 	sys.stdout.write(
-		'loss {:.4f}, '
+		'\r\033[Kloss {:.4f}, '
 		'acc1 {:.2f}%, '
 		'acc5 {:.2f}%\n'.format(
 			loss, acc1, acc5,
