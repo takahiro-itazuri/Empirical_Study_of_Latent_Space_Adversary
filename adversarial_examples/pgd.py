@@ -10,6 +10,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.autograd import grad
 from torch.autograd.gradcheck import zero_gradients
+from torchvision import transforms
 from torchvision.utils import save_image
 
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
@@ -107,6 +108,9 @@ def main():
 
 	cnt = 0
 	total = 0
+	ntr = []
+	aes = []
+	labels = []
 
 	for itr, (x, t) in enumerate(loader):
 		x, t = x.to(opt.device), t.to(opt.device)
@@ -124,6 +128,10 @@ def main():
 		if final_pred.item() != t.item(): # attack succeeded
 			cnt += 1
 
+			ntr.append(transforms.functional.to_pil_image(unnormalize(x.cpu(), opt.dataset)[0]))
+			aes.append(transforms.functional.to_pil_image(unnormalize(perturbed_x.cpu(), opt.dataset)[0]))
+			labels.append(t.cpu())
+
 			save_image(
 				torch.cat((unnormalize(x.cpu(), opt.dataset), unnormalize(perturbed_x.cpu(), opt.dataset)), dim=0),
 				os.path.join(opt.log_dir, '{:03d}/{:03d}/{:05d}.png'.format(init_pred.item(), final_pred.item(), itr)),
@@ -137,6 +145,13 @@ def main():
 		if cnt % 10 == 0:
 			sys.stdout.write('\r\033[Kprogress [{: 5d}/{: 5d}] {:d} adversarial examples are found from {:d} samples.'.format(itr, len(dataset), cnt, total))
 			sys.stdout.flush()
+
+	# save as one file
+	labels = torch.tensor(labels)
+	with open(os.path.join(opt.log_dir, 'ntr.pt'), 'wb') as f:
+		torch.save((ntr, labels), f, pickle_protocol=4)
+	with open(os.path.join(opt.log_dir, 'aes.pt'), 'wb') as f:
+		torch.save((aes, labels), f, pickle_protocol=4)
 
 	sys.stdout.write('\r\033[K{:d} adversarial examples are found from {:d} samples.\n'.format(cnt, total))
 	sys.stdout.write('success rate {:.2f}\n'.format(float(cnt)/float(total)))

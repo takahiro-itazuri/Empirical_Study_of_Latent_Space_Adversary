@@ -6,10 +6,11 @@ import zipfile
 import lmdb
 import cv2
 import numpy as np
+from PIL import Image
 
 import torch
 import torchvision
-from torch.utils.data import Subset
+from torch.utils.data import Subset, Dataset
 
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 data_root = os.path.join(base, 'data')
@@ -23,7 +24,8 @@ __all__ = [
 	'normalize',
 	'unnormalize',
 	'shuffle_dataset',
-	'download_dataset'
+	'download_dataset',
+	'CustomTensorDataset'
 ]
 
 
@@ -79,9 +81,7 @@ def normalize(x, name, device='cpu'):
 	device (str): device
 	"""
 	mean, std = get_dataset_stats(name, device)
-	
-	x.sub(mean[None, :, None, None]).div(std[None, :, None, None])
-	return x
+	return x.sub(mean[None, :, None, None]).div(std[None, :, None, None])
 
 
 def unnormalize(x, name, device='cpu'):
@@ -94,9 +94,7 @@ def unnormalize(x, name, device='cpu'):
 	device (str): device
 	"""
 	mean, std = get_dataset_stats(name, device)
-
-	x.mul(std[None, :, None, None]).add(mean[None, :, None, None])
-	return x
+	return 	x.mul(std[None, :, None, None]).add(mean[None, :, None, None])
 
 
 def get_labels(name, root=None):
@@ -276,3 +274,35 @@ def download_dataset(name):
 
 			del env
 
+
+class CustomTensorDataset(Dataset):
+	"""Custom Tensor Dataset"""
+	def __init__(self, root, transform=None, target_transform=None):
+		"""
+		Args:
+		- root (str): root directory
+		- transform (callable, optiional): transform function for data
+		- target_transform (callable, optional): transform function for target label
+		"""
+		self.root = root
+		self.transform = transform
+		self.target_transform = target_transform
+		self.data, self.labels = torch.load(self.root)
+
+	def __getitem__(self, index):
+		"""
+		Args:
+		- index (int): index
+		"""
+		img, target = self.data[index], self.labels[index]
+
+		if self.transform is not None:
+			img = self.transform(img)
+
+		if self.target_transform is not None:
+			target = self.target_transform(target)
+		
+		return img, target
+
+	def __len__(self):
+		return len(self.data)
