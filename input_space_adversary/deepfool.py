@@ -21,7 +21,7 @@ from input_space_adversary.options import DeepFoolOptions
 from input_space_adversary.utils import *
 
 
-def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=50, device='cpu'):
+def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=10, device='cpu'):
 	"""
 	Args:
 	- x (torch.Tensor): input image
@@ -122,11 +122,12 @@ def main():
 			aes.append(transforms.functional.to_pil_image(unnormalize(perturbed_x.cpu(), opt.dataset)[0]))
 			labels.append(t.cpu())
 
-			save_image(
-				torch.cat((unnormalize(x.cpu(), opt.dataset), unnormalize(perturbed_x.cpu(), opt.dataset)), dim=0),
-				os.path.join(opt.log_dir, '{:03d}/{:03d}/{:05d}.png'.format(init_pred.item(), final_pred.item(), itr)),
-				padding=0
-			)
+			if opt.save_image:
+				save_image(
+					torch.cat((unnormalize(x.cpu(), opt.dataset), unnormalize(perturbed_x.cpu(), opt.dataset)), dim=0),
+					os.path.join(opt.log_dir, '{:03d}/{:03d}/{:05d}.png'.format(init_pred.item(), final_pred.item(), itr)),
+					padding=0
+				)
 
 			if opt.num_samples != -1:
 				if cnt >= opt.num_samples:
