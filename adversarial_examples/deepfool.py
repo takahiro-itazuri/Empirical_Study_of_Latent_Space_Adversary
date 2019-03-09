@@ -21,7 +21,7 @@ from adversarial_examples.options import DeepFoolOptions
 from adversarial_examples.utils import *
 
 
-def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=50, device='cpu'):
+def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=10, device='cpu'):
 	"""
 	Args:
 	- x (torch.Tensor): input image
