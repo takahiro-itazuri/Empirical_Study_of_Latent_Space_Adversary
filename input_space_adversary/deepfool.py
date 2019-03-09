@@ -17,8 +17,8 @@ from torchvision.utils import save_image
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 sys.path.append(base)
 from misc import *
-from adversarial_examples.options import DeepFoolOptions
-from adversarial_examples.utils import *
+from input_space_adversary.options import DeepFoolOptions
+from input_space_adversary.utils import *
 
 
 def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=50, device='cpu'):

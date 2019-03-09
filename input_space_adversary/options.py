@@ -6,7 +6,7 @@ import torch
 
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 sys.path.append(base)
-from adversarial_examples.utils import get_eps, get_alpha
+from input_space_adversary.utils import get_eps, get_alpha
 
 
 model_names = ['lenet', 'alexnet', 'vgg16', 'vgg16_bn', 'vgg19', 'vgg19_bn', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
