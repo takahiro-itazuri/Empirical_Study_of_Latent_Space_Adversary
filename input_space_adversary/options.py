@@ -131,7 +131,7 @@ class DeepFoolOptions(BaseOptions):
 		parser = BaseOptions.initialize(self, parser)
 		parser.add_argument('--overshoot', type=float, default=0.02, help='overshoot value')
 		parser.add_argument('--num_candidates', type=int, default=-1, help='number of candidate classes (calculated from the class with higher likelihood)')
-		parser.add_argument('--max_itr', type=int, default=10, help='number of maximum iteration')
+		parser.add_argument('--max_itr', type=int, default=30, help='number of maximum iteration')
 		return parser
 
 	def parse(self):

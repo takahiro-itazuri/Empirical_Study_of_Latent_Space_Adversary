@@ -21,7 +21,7 @@ from input_space_adversary.options import DeepFoolOptions
 from input_space_adversary.utils import *
 
 
-def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=10, device='cpu'):
+def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=30, device='cpu'):
 	"""
 	Args:
 	- x (torch.Tensor): input image
