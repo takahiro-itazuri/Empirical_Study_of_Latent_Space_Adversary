@@ -99,7 +99,6 @@ def validate(model, loader, criterion, opt):
 			y = model(x if x.shape[1] == 3 else x.repeat(1, 3, 1, 1))
 			loss = criterion(y, t)
 			acc1, acc5 = accuracy(y, t, topk=(1,5))
-
 			cnt += 1
 			running_loss += loss.item()
 			running_acc1 += acc1
