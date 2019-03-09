@@ -66,6 +66,12 @@ class BaseOptions():
 	def parse(self):
 		opt = self.gather_options()
 
+		# input image size
+		if opt.arch == 'lenet':
+			opt.input_size = 32
+		else:
+			opt.input_size = 224
+
 		# GPU
 		if opt.cuda and torch.cuda.is_available():
 			torch.backends.cudnn.benchmark = True
@@ -113,6 +119,22 @@ class PGDOptions(BaseOptions):
 
 		if opt.alpha == None:
 			opt.alpha = get_alpha(opt.eps, opt.num_steps)
+
+		self.opt = opt
+		self.print_options(opt)
+		return self.opt
+
+
+class DeepFoolOptions(BaseOptions):
+	def initialize(self, parser):
+		parser = BaseOptions.initialize(self, parser)
+		parser.add_argument('--overshoot', type=float, default=0.02, help='overshoot value')
+		parser.add_argument('--num_candidates', type=int, default=-1, help='number of candidate classes (calculated from the class with higher likelihood)')
+		parser.add_argument('--max_itr', type=int, default=10, help='number of maximum iteration')
+		return parser
+
+	def parse(self):
+		opt = BaseOptions.parse(self)
 
 		self.opt = opt
 		self.print_options(opt)

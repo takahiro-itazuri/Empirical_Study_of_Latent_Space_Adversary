@@ -1,66 +1,90 @@
 import os
 import sys
+import copy
 import numpy as np
-from PIL import Image
 
 import torch
 torch.backends.cudnn.benchmark=True
 import torchvision
+from torch.autograd.gradcheck import zero_gradients
+from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from torch.autograd import grad
-from torch.autograd.gradcheck import zero_gradients
+from torchvision import transforms
 from torchvision.utils import save_image
 
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 sys.path.append(base)
 from misc import *
-from adversarial_examples.options import FGSMOptions
+from adversarial_examples.options import DeepFoolOptions
 from adversarial_examples.utils import *
 
 
-def fgsm_attack(x, t, model, dataset, eps, p=-1, device='cpu'):
+def deepfool_attack(x, t, model, dataset, num_candidates=-1, overshoot=0.2, max_itr=50, device='cpu'):
 	"""
 	Args:
 	- x (torch.Tensor): input image
 	- t (torch.Tensor): target label
-	- model (nn.Module): target classifier
+	- classifier (nn.Module): target classifier
 	- dataset (str): dataset name
-	- eps (float): perturbation size
-	- p (int): order of norm (-1 means infty norm)
+	- num_candidates (int): number of candidate classes to attack
+	- overshoot (float): overshoot value (eta in the original paper)
+	- max_itr (int): max iterations
 	- device (str): device
 	"""
-	eps = scale(eps, dataset)[None, :, None, None].to(device)
-	delta = torch.zeros_like(x, requires_grad=True).to(device)
 
-	# calculate gradient
-	zero_gradients(delta)
-	perturbed_x = x + delta
-	loss = F.cross_entropy(model(perturbed_x if perturbed_x.shape[1] == 3 else perturbed_x.repeat(1, 3, 1, 1)), t, reduction='sum')
-	grad_delta = grad(loss, delta)[0].detach()
-	
-	if p == -1:	# l_infty norm
-		delta.data = eps * grad_delta.sign()
-
-	elif p >= 1: #l_p norm
-		grad_delta_norm = calc_norm_each_sample(grad_delta)
-		delta.data = eps * grad_delta / grad_delta_norm
+	if num_candidates == -1:
+		num_candidates = len(get_labels(dataset)) - 1
 		
-	else:
-		raise NotImplementedError
+	candidates = model(x if x.shape[1] == 3 else x.repeat(1, 3, 1, 1)).flatten().argsort(descending=True)[1:num_candidates+1]
+	k_x0 = t.item()
 
-	return clamp(x + delta, dataset, device)
+	xi = copy.deepcopy(x).to(device)
+	xi.requires_grad_()
+	zero_gradients(xi)
+	f_xi = model(xi if xi.shape[1] == 3 else xi.repeat(1, 3, 1, 1))
+	k_xi = f_xi.argmax().item()
+	
+	itr = 0
+	while (k_xi == k_x0) and (itr < max_itr):
+		norm_l = float('inf')
+		df_xi_kx0 = grad(f_xi[0][k_x0], xi, retain_graph=True)[0].detach()
+
+		for j in range(num_candidates):
+			zero_gradients(xi)
+			k_xi = candidates[j]
+			df_xi_kxi = grad(f_xi[0][k_xi], xi, retain_graph=True)[0].detach()
+
+			w_k = df_xi_kxi - df_xi_kx0
+			f_k = (f_xi[0][k_xi] - f_xi[0][k_x0]).detach()
+
+			norm_k = torch.abs(f_k).item() / w_k.norm().item()
+
+			if norm_k < norm_l:
+				norm_l = norm_k
+				w_l = w_k
+
+		ri = ((norm_l + 1e-6) * w_l) / w_l.norm()
+		xi = clamp(xi + (1.0 + overshoot) * ri, dataset, device)
+		itr += 1
+
+		zero_gradients(xi)
+		f_xi = model(xi if xi.shape[1] == 3 else xi.repeat(1, 3, 1, 1))
+		k_xi = f_xi.argmax().item()
+	
+	return xi
 
 
 def main():
-	opt = FGSMOptions().parse()
+	opt = DeepFoolOptions().parse()
 
 	# dataset
 	dataset = shuffle_dataset(get_dataset(opt.dataset, train=opt.use_train, input_size=opt.input_size, augment=False))
 	loader = DataLoader(dataset, batch_size=1, shuffle=False)
 	labels = get_labels(opt.dataset)
 	opt.num_classes = len(labels)
-
+	
 	# model
 	model = get_classifier(opt.arch, opt.num_classes, opt.pretrained).to(opt.device)
 	if opt.weight != None:
@@ -83,7 +107,7 @@ def main():
 		if init_pred.item() != t.item():
 			continue
 
-		perturbed_x = fgsm_attack(x, t, model, opt.dataset, opt.eps, opt.p, opt.device)
+		perturbed_x = deepfool_attack(x, t, model, opt.dataset, opt.num_candidates, opt.overshoot, opt.max_itr, opt.device)
 
 		final_pred = model(perturbed_x if perturbed_x.shape[1] == 3 else perturbed_x.repeat(1, 3, 1 ,1)).argmax()
 
@@ -106,7 +130,7 @@ def main():
 			sys.stdout.flush()
 
 	sys.stdout.write('\r\033[K{:d} adversarial examples are found from {:d} samples.\n'.format(cnt, total))
-	sys.stdout.write('\nsuccess rate {:.2f}\n'.format(float(cnt)/float(total)))
+	sys.stdout.write('success rate {:.2f}\n'.format(float(cnt)/float(total)))
 	sys.stdout.flush()
 
 
