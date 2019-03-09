@@ -89,7 +89,7 @@ def main():
 	opt = PGDOptions().parse()
 
 	# dataset
-	dataset = shuffle_dataset(get_dataset(opt.dataset, train=opt.use_train))
+	dataset = shuffle_dataset(get_dataset(opt.dataset, train=opt.use_train, input_size=opt.input_size, augment=False))
 	loader = DataLoader(dataset, batch_size=1, shuffle=False)
 	labels = get_labels(opt.dataset)
 	opt.num_classes = len(labels)
