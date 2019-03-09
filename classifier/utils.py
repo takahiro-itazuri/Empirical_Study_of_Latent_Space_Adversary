@@ -10,7 +10,7 @@ torch.backends.cudnn.benchmark=True
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 sys.path.append(base)
 from misc import *
-from adversarial_examples import *
+from input_space_adversary import *
 
 __all__ = [
 	'train', 

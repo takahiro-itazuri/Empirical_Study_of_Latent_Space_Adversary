@@ -8,7 +8,7 @@ from torchvision import models
 
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 sys.path.append(base)
-from adversarial_examples.utils import get_eps, get_alpha
+from input_space_adversary.utils import get_eps, get_alpha
 from classifier.utils import get_lr
 
 
