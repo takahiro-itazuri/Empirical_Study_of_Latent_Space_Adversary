@@ -143,7 +143,7 @@ def main():
 					break
 		
 		if cnt % 10 == 0:
-			sys.stdout.write('\r\033[Kprogress [{: 5d}/{: 5d}] {:d} adversarial examples are found from {:d} samples.'.format(itr, len(dataset), cnt, total))
+			sys.stdout.write('\r\033[Kprogress [{: 5d}/{: 5d}] {:d} adversarial examples are found from {:d} samples.'.format(itr+1, len(dataset), cnt, total))
 			sys.stdout.flush()
 
 	# save as one file
