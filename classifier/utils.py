@@ -166,7 +166,7 @@ def accuracy(output, target, topk=(1,)):
 		acc = []
 		for k in topk:
 			correct_k = correct[:k].float().sum()
-			acc.append(correct_k.item() * 100.0 / batch_size)
+			acc.append(correct_k * 100.0 / batch_size)
 		return acc
 
 

@@ -69,10 +69,9 @@ def main():
 	model.eval()
 
 	# make directories
-	if opt.save_image:
-		for i in range(opt.num_classes):
-			for j in range(opt.num_classes):
-				os.makedirs(os.path.join(opt.log_dir, '{:03d}/{:03d}'.format(i, j)), exist_ok=True)
+	for i in range(opt.num_classes):
+		for j in range(opt.num_classes):
+			os.makedirs(os.path.join(opt.log_dir, '{:03d}/{:03d}'.format(i, j)), exist_ok=True)
 
 	cnt = 0
 	total = 0
@@ -100,12 +99,11 @@ def main():
 			aes.append(transforms.functional.to_pil_image(unnormalize(perturbed_x.cpu(), opt.dataset)[0]))
 			ts.append(t.cpu())
 
-			if opt.save_image:
-				save_image(
-					torch.cat((unnormalize(x.cpu(), opt.dataset), unnormalize(perturbed_x.cpu(), opt.dataset)), dim=0),
-					os.path.join(opt.log_dir, '{:03d}/{:03d}/{:05d}.png'.format(init_pred.item(), final_pred.item(), itr)),
-					padding=0
-				)
+			save_image(
+				torch.cat((unnormalize(x.cpu(), opt.dataset), unnormalize(perturbed_x.cpu(), opt.dataset)), dim=0),
+				os.path.join(opt.log_dir, '{:03d}/{:03d}/{:05d}.png'.format(init_pred.item(), final_pred.item(), itr)),
+				padding=0
+			)
 
 			if opt.num_samples != -1:
 				if cnt >= opt.num_samples:
