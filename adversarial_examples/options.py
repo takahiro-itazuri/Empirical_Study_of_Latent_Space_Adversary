@@ -27,7 +27,6 @@ class BaseOptions():
 		parser.add_argument('--use_train', action='store_true', default=False, help='use train dataset')
 		# output
 		parser.add_argument('-l', '--log_dir', type=str, required=True, help='log directory')
-		parser.add_argument('--save_image', action='store_true', default=False, help='save image or not')
 		parser.add_argument('-N', '--num_samples', type=int, default=-1, help='number of samples (-1 means all samples)')
 		# GPU
 		parser.add_argument('--cuda', action='store_true', default=False, help='enable GPU')
