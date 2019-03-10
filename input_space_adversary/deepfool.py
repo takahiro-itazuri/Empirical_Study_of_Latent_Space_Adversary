@@ -100,7 +100,7 @@ def main():
 	total = 0
 	ntr = []
 	aes = []
-	labels = []
+	ts = []
 
 	for itr, (x, t) in enumerate(loader):
 		x, t = x.to(opt.device), t.to(opt.device)
@@ -120,14 +120,13 @@ def main():
 
 			ntr.append(transforms.functional.to_pil_image(unnormalize(x.cpu(), opt.dataset)[0]))
 			aes.append(transforms.functional.to_pil_image(unnormalize(perturbed_x.cpu(), opt.dataset)[0]))
-			labels.append(t.cpu())
+			ts.append(t.cpu())
 
-			if opt.save_image:
-				save_image(
-					torch.cat((unnormalize(x.cpu(), opt.dataset), unnormalize(perturbed_x.cpu(), opt.dataset)), dim=0),
-					os.path.join(opt.log_dir, '{:03d}/{:03d}/{:05d}.png'.format(init_pred.item(), final_pred.item(), itr)),
-					padding=0
-				)
+			save_image(
+				torch.cat((unnormalize(x.cpu(), opt.dataset), unnormalize(perturbed_x.cpu(), opt.dataset)), dim=0),
+				os.path.join(opt.log_dir, '{:03d}/{:03d}/{:05d}.png'.format(init_pred.item(), final_pred.item(), itr)),
+				padding=0
+			)
 
 			if opt.num_samples != -1:
 				if cnt >= opt.num_samples:
@@ -138,11 +137,11 @@ def main():
 			sys.stdout.flush()
 
 	# save as one file
-	labels = torch.tensor(labels)
+	ts = torch.tensor(ts)
 	with open(os.path.join(opt.log_dir, 'ntr.pt'), 'wb') as f:
-		torch.save((ntr, labels), f, pickle_protocol=4)
+		torch.save((ntr, ts), f, pickle_protocol=4)
 	with open(os.path.join(opt.log_dir, 'aes.pt'), 'wb') as f:
-		torch.save((aes, labels), f, pickle_protocol=4)
+		torch.save((aes, ts), f, pickle_protocol=4)
 
 	sys.stdout.write('\r\033[K{:d} adversarial examples are found from {:d} samples.\n'.format(cnt, total))
 	sys.stdout.write('success rate {:.2f}\n'.format(float(cnt)/float(total)))

@@ -25,10 +25,9 @@ __all__ = [
 
 
 def train(model, loader, criterion, optimizer, scheduler, opt):
-	cnt = 0
-	running_loss = 0
-	running_acc1 = 0
-	running_acc5 = 0
+	loss_meter = AverageMeter()
+	acc1_meter = AverageMeter()
+	acc5_meter = AverageMeter()
 
 	model.train()
 
@@ -55,13 +54,13 @@ def train(model, loader, criterion, optimizer, scheduler, opt):
 			model.train()		
 
 		y = model(x if x.shape[1] == 3 else x.repeat(1, 3, 1, 1))
+
 		loss = criterion(y, t)
 		acc1, acc5 = accuracy(y, t, topk=(1,5))
 
-		cnt += 1
-		running_loss += loss.item()
-		running_acc1 += acc1
-		running_acc5 += acc5
+		loss_meter.update(loss.item(), x.size(0))
+		acc1_meter.update(acc1.item(), x.size(0))
+		acc5_meter.update(acc5.item(), x.size(0))
 
 		optimizer.zero_grad()
 		loss.backward()
@@ -79,14 +78,13 @@ def train(model, loader, criterion, optimizer, scheduler, opt):
 				)
 			)
 
-	return running_loss / cnt, running_acc1 / cnt, running_acc5 / cnt
+	return loss_meter.avg, acc1_meter.avg, acc5_meter.avg
 
 
 def validate(model, loader, criterion, opt):
-	cnt = 0
-	running_loss = 0
-	running_acc1 = 0
-	running_acc5 = 0
+	loss_meter = AverageMeter()
+	acc1_meter = AverageMeter()
+	acc5_meter = AverageMeter()
 
 	model.eval()
 
@@ -97,12 +95,13 @@ def validate(model, loader, criterion, opt):
 				t = t.to(opt.device, non_blocking=True)
 			
 			y = model(x if x.shape[1] == 3 else x.repeat(1, 3, 1, 1))
+
 			loss = criterion(y, t)
 			acc1, acc5 = accuracy(y, t, topk=(1,5))
-			cnt += 1
-			running_loss += loss.item()
-			running_acc1 += acc1
-			running_acc5 += acc5
+
+			loss_meter.update(loss.item(), x.size(0))
+			acc1_meter.update(acc1.item(), x.size(0))
+			acc5_meter.update(acc5.item(), x.size(0))
 
 			if itr % opt.print_freq == 0:
 				sys.stdout.write(
@@ -116,7 +115,7 @@ def validate(model, loader, criterion, opt):
 					)
 				)
 
-	return running_loss / cnt, running_acc1 / cnt, running_acc5 / cnt
+	return loss_meter.avg, acc1_meter.avg, acc5_meter.avg
 
 
 def load_model(model, path):
@@ -160,14 +159,14 @@ def accuracy(output, target, topk=(1,)):
 		maxk = max(topk)
 		batch_size = target.size(0)
 
-		_, pred = output.topk(maxk, 1) # size: (B, k)
-		pred = pred.t() # size: (k, B)
+		_, pred = output.topk(maxk, dim=1) # top-k index: size (B, k)
+		pred = pred.t() # size (k, B)
 		correct = pred.eq(target.view(1, -1).expand_as(pred))
 
 		acc = []
 		for k in topk:
-			correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-			acc.append(correct_k.item() * 100.0 / batch_size)
+			correct_k = correct[:k].float().sum()
+			acc.append(correct_k * 100.0 / batch_size)
 		return acc
 
 

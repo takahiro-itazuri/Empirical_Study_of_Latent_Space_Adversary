@@ -1,13 +1,7 @@
 import os
-import sys
 import argparse
 
 import torch
-
-base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
-sys.path.append(base)
-from input_space_adversary.utils import get_eps, get_alpha
-
 
 model_names = ['lenet', 'alexnet', 'vgg16', 'vgg16_bn', 'vgg19', 'vgg19_bn', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
 dataset_names = ['mnist', 'svhn', 'cifar10', 'cifar100', 'lsun', 'imagenet']
@@ -22,6 +16,7 @@ class BaseOptions():
 		parser.add_argument('-a', '--arch', type=str, required=True, choices=model_names, help='model architecture: ' + ' | ' .join(model_names), metavar='ARCH')
 		parser.add_argument('-w', '--weight', type=str, default=None, help='model weight path')
 		parser.add_argument('--pretrained', action='store_true', default=False, help='use pre-trained model')
+		parser.add_argument('-g', '--gan_dir', type=str, required=True, help='directory to GAN weight')
 		# dataset
 		parser.add_argument('-d', '--dataset', type=str, default='imagenet', choices=dataset_names, help='dataset: ' + ' | '.join(dataset_names), metavar='DATASET')
 		parser.add_argument('--use_train', action='store_true', default=False, help='use train dataset')
@@ -66,11 +61,19 @@ class BaseOptions():
 	def parse(self):
 		opt = self.gather_options()
 
-		# input image size
+		# input image size of classifier
 		if opt.arch == 'lenet':
 			opt.input_size = 32
 		else:
 			opt.input_size = 224
+
+		# output image size of gan
+		if opt.dataset == 'mnist':
+			opt.gan_size = 28
+		elif opt.dataset in ['svhn', 'cifar10']:
+			opt.gan_size = 32
+		elif opt.dataset == 'lsun':
+			opt.gan_size = 64
 
 		# GPU
 		if opt.cuda and torch.cuda.is_available():
@@ -83,59 +86,66 @@ class BaseOptions():
 		return self.opt
 
 
-class FGSMOptions(BaseOptions):
+class ConditionalLSAOptions(BaseOptions):
 	def initialize(self, parser):
 		parser = BaseOptions.initialize(self, parser)
-		parser.add_argument('--p', type=int, default=-1, help='type of norm (-1 means l_infty norm)')
-		parser.add_argument('--eps', type=float, default=None, help='perturbation size')
+		# hyperparameter
+		parser.add_argument('--alpha', type=float, default=0.01, help='learning rate')
+		parser.add_argument('--eps_z', type=float, default=0.001, help='epsilon for latent perturbation (soft constraint)')
+		parser.add_argument('--lambda1', type=float, default=10.0, help='coefficient of latent perturbation loss')
+		parser.add_argument('--lambda2', type=float, default=10.0, help='coefficient of image perturbation loss')
+		parser.add_argument('--max_itr', type=int, default=250, help='max iteration')
 		return parser
 
 	def parse(self):
 		opt = BaseOptions.parse(self)
 
-		if opt.eps == None:
-			opt.eps = get_eps('train', opt.p, opt.dataset)
+		if opt.dataset == 'mnist':
+			opt.nz = 64
+			opt.nc = 1
+			opt.nf = 32
+		else:
+			opt.nz = 128
+			opt.nc = 3
+			opt.nf = 128
+
+		if opt.num_samples <= 0:
+			raise ValueError('num_samlpes should be more than 0.')
 
 		self.opt = opt
 		self.print_options(opt)
 		return self.opt
-	
+			
 
-class PGDOptions(BaseOptions):
+class UnconditionalLSAOptions(BaseOptions):
 	def initialize(self, parser):
 		parser = BaseOptions.initialize(self, parser)
-		parser.add_argument('--p', type=int, default=-1, help='type of norm (-1 means l_infty norm)')
-		parser.add_argument('--eps', type=float, default=None, help='perturbation size')
-		parser.add_argument('--alpha', type=float, default=None, help='perturbation size of single step')
-		parser.add_argument('--num_steps', type=int, default=10, help='number of steps')
-		parser.add_argument('--restarts', type=int, default=10, help='times of restarting')
+		parser.add_argument('--method', type=str, default='hybrid_shrinking', help='search method')
+		parser.add_argument('--max_itr', type=int, default=10, help='max iteration')
+		parser.add_argument('--max_r', type=float, default=3.0, help='max perturbation size')
+		parser.add_argument('--dr', type=float, default=0.3, help='perturbaion size for single step')
+		parser.add_argument('--N', type=int, default=1000, help='number of samples for each iteration')
+		parser.add_argument('--batch_size', type=int, default=500, help='batch size')
 		return parser
 
 	def parse(self):
 		opt = BaseOptions.parse(self)
-
-		if opt.eps == None:
-			opt.eps = get_eps('train', opt.p, opt.dataset)
-
-		if opt.alpha == None:
-			opt.alpha = get_alpha(opt.eps, opt.num_steps)
-
-		self.opt = opt
-		self.print_options(opt)
-		return self.opt
-
-
-class DeepFoolOptions(BaseOptions):
-	def initialize(self, parser):
-		parser = BaseOptions.initialize(self, parser)
-		parser.add_argument('--overshoot', type=float, default=0.02, help='overshoot value')
-		parser.add_argument('--num_candidates', type=int, default=-1, help='number of candidate classes (calculated from the class with higher likelihood)')
-		parser.add_argument('--max_itr', type=int, default=30, help='number of maximum iteration')
-		return parser
-
-	def parse(self):
-		opt = BaseOptions.parse(self)
+		
+		if opt.dataset == 'mnist':
+			opt.nz = 64
+			opt.nc = 1
+			opt.nf = 64
+		elif opt.dataset == 'svhn':
+			opt.nz = 64
+			opt.nc = 3
+			opt.nf = 64
+		else:
+			opt.nz = 128
+			opt.nc = 3
+			opt.nf = 128
 
 		self.opt = opt
 		self.print_options(opt)
 		return self.opt
+			
+		
