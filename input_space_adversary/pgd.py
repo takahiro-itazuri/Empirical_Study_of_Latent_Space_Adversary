@@ -90,7 +90,7 @@ def main():
 	opt = PGDOptions().parse()
 
 	# dataset
-	dataset = shuffle_dataset(get_dataset(opt.dataset, train=opt.use_train, input_size=opt.input_size, augment=False))
+	dataset = shuffle_dataset(get_dataset(opt.dataset, train=opt.use_train, input_size=opt.input_size))
 	loader = DataLoader(dataset, batch_size=1, shuffle=False)
 	labels = get_labels(opt.dataset)
 	opt.num_classes = len(labels)
@@ -156,6 +156,13 @@ def main():
 	sys.stdout.write('\r\033[K{:d} adversarial examples are found from {:d} samples.\n'.format(cnt, total))
 	sys.stdout.write('success rate {:.2f}\n'.format(float(cnt)/float(total)))
 	sys.stdout.flush()
+
+	save_result({
+		'cnt': cnt,
+		'total': total,
+		'robust accuracy': 100.0 * (1.0 - float(cnt) / float(total)),
+		'success rate': 100.0 * float(cnt) / float(total)
+	}, opt.log_dir, opt.result)
 
 
 if __name__ == '__main__':
