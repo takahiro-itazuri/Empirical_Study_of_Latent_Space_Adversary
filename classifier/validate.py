@@ -27,7 +27,7 @@ def main():
 	# model
 	model = get_classifier(opt.arch, opt.num_classes, opt.pretrained).to(opt.device)
 		
-	if opt.weight != None:
+	if opt.weight is not None:
 		model.load_state_dict(torch.load(opt.weight))
 
 	# data parallel

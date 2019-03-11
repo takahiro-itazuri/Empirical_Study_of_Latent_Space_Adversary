@@ -37,9 +37,9 @@ def main():
 	scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.step_size, gamma=opt.gamma)
 
 	# resume from checkpoint
-	if opt.checkpoint != None:
+	if opt.checkpoint is not None:
 		opt.last_epoch = load_checkpoint(model, optimizer, opt.checkpoint)
-	elif opt.weight != None:
+	elif opt.weight is not None:
 		load_model(model, opt.weight)
 
 	# data parallel
