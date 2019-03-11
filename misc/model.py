@@ -13,7 +13,8 @@ from misc.models import *
 
 __all__ = [
 	'get_classifier',
-	'replace_relu_with_softplus'
+	'replace_relu_with_softplus',
+	'replace_final_fc'
 ]
 
 
@@ -42,12 +43,7 @@ def get_classifier(name, num_classes=1000, pretrained=False, inplace=True, use_b
 			raise NotImplementedError
 
 		if num_classes != 1000:
-			if name == 'alexnet' or name.startswith('vgg'):
-				num_features = model.classifier[6].in_features
-				model.classifier[6] = nn.Linear(num_features, num_classes)
-			elif name.startswith('resnet'):
-				num_features = model.fc.in_features
-				model.fc = nn.Linear(num_features, num_classes)
+			replace_final_fc(name, model, num_classes)
 
 	else:
 		if name == 'lenet':
@@ -80,6 +76,15 @@ def get_classifier(name, num_classes=1000, pretrained=False, inplace=True, use_b
 			m.inplace = inplace
 
 	return model
+
+
+def replace_final_fc(name, model, num_classes):
+	if name == 'alexnet' or name.startswith('vgg'):
+		num_features = model.classifier[6].in_features
+		model.classifier[6] = nn.Linear(num_features, num_classes)
+	elif name.startswith('resnet'):
+		num_features = model.fc.in_featurres
+		model.fc = nn.Linear(num_features, num_classes)
 
 
 def replace_relu_with_softplus(model, beta=100.0, threshold=10.0):
