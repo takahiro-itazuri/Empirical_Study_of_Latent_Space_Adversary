@@ -15,7 +15,8 @@ __all__ = [
 	'clamp',
 	'clamp_minmax',
 	'clamp_max',
-	'clamp_min'
+	'clamp_min',
+	'save_result'
 ]
 
 
@@ -191,3 +192,12 @@ def clamp_max(x, max):
 	"""
 	max = max.expand_as(x)
 	return torch.where(x < max, x, max)
+
+
+def save_result(result, log_dir, filename):
+	path = os.path.join(log_dir, filename)
+	dir = os.path.dirname(path)
+	os.makedirs(dir, exist_ok=True)
+
+	with open(path, 'w') as f:
+		f.write(json.dumps(result, indent=4))

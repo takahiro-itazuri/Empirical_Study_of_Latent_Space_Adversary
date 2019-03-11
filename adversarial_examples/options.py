@@ -28,6 +28,7 @@ class BaseOptions():
 		# output
 		parser.add_argument('-l', '--log_dir', type=str, required=True, help='log directory')
 		parser.add_argument('-N', '--num_samples', type=int, default=-1, help='number of samples (-1 means all samples)')
+		parser.add_argument('-r', '--result', type=str, default='result.json', help='result json path')
 		# GPU
 		parser.add_argument('--cuda', action='store_true', default=False, help='enable GPU')
 		self.initialize = True
