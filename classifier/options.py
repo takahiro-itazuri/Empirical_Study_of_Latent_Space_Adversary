@@ -13,7 +13,7 @@ from classifier.utils import get_lr
 
 
 model_names = ['lenet', 'alexnet', 'vgg16', 'vgg16_bn', 'vgg19', 'vgg19_bn', 'resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
-dataset_names = ['mnist', 'svhn', 'cifar10', 'cifar100', 'lsun', 'imagenet']
+dataset_names = ['mnist', 'svhn', 'cifar10', 'cifar100', 'stl10', 'lsun', 'imagenet']
 mode_names = ['normal', 'half', 'adversarial']
 attack_names = ['fgsm', 'pgd']
 
@@ -129,6 +129,9 @@ class TrainOptions(BaseOptions):
 		if opt.lr == None:
 			opt.lr = get_lr(opt.arch)
 
+		if opt.weight is not None and opt.checkpoint is not None:
+			raise ValueError('You can only specify either weight or checkpoint.') 
+
 		self.opt = opt
 		self.print_options(opt)
 		return self.opt
@@ -150,3 +153,40 @@ class ValidateOptions(BaseOptions):
 		self.opt = opt
 		self.print_options(opt)
 		return self.opt
+
+
+class FinetuneOptions(BaseOptions):
+	def initialize(self, parser):
+		parser = BaseOptions.initialize(self, parser)
+		# model
+		parser.add_argument('-p', '--pretrained_dataset', type=str, default='imagenet', choices=dataset_names, help='pretrained dataset: ' + ' | '.join(dataset_names), metavar='PRETRAINED_DATASET')
+		parser.add_argument('-c', '--checkpoint', type=str, default=None, help='checkpoint path for resume')
+		parser.add_argument('-w', '--weight', type=str, default=None, help='pretrained model weight path')
+		# dataset
+		parser.add_argument('--num_samples', type=int, default=-1, help='number of samples (-1 means all)')
+		# hyperparameter
+		parser.add_argument('--last_epoch', type=int, default=60, help='last epoch')
+		parser.add_argument('--num_epochs', type=int, default=90, help='number of epochs')
+		parser.add_argument('--lr', type=float, default=None, help='initial learning rate')
+		parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
+		parser.add_argument('--wd', type=float, default=1e-4, help='weight decay')
+		# scheduler
+		parser.add_argument('--step_size', type=int, default=30, help='step size for scheduler')
+		parser.add_argument('--gamma', type=float, default=0.1, help='gamma for scheduler')
+		return parser
+
+	def parse(self):
+		opt = BaseOptions.parse(self)
+
+		opt.mode = 'normal'
+
+		if opt.weight is not None and opt.checkpoint is not None:
+			raise ValueError('You can only specify either weight or checkpoint.') 
+
+		if opt.lr == None:
+			opt.lr = get_lr(opt.arch)
+
+		self.opt = opt
+		self.print_options(opt)
+		return self.opt
+			
