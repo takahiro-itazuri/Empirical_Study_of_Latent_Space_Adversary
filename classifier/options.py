@@ -35,7 +35,7 @@ class BaseOptions():
 		# log
 		parser.add_argument('--print_freq', type=int, default=10, help='print frequency')
 		parser.add_argument('-l', '--log_dir', type=str, required=True, help='log directory')
-		parser.add_argument('-r', '--result', type=str, default='result.json', help='result json path')
+		parser.add_argument('-s', '--suffix', type=str, default='', help='suffix')
 		self.initialized = True
 		return parser
 

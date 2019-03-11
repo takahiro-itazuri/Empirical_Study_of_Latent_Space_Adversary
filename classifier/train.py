@@ -54,14 +54,22 @@ def main():
 
 	# train
 	writer = SummaryWriter(os.path.join(opt.log_dir, 'runs'))
+	time_stamp = get_time_stamp()
+	loss_logger = Logger(os.path.join(opt.log_dir, 'loss.csv'), opt.num_epochs, time_stamp)
+	acc1_logger = Logger(os.path.join(opt.log_dir, 'acc1.csv'), opt.num_epochs, time_stamp)
+	acc5_logger = Logger(os.path.join(opt.log_dir, 'acc5.csv'), opt.num_epochs, time_stamp)
 	for epoch in range(opt.last_epoch+1, opt.num_epochs+1):
 		scheduler.step(epoch - 1) # scheduler's epoch is 0-indexed.
 		train_loss, train_acc1, train_acc5 = train(model, train_loader, criterion, optimizer, scheduler, opt)
 		val_loss, val_acc1, val_acc5 = validate(model, val_loader, criterion, opt)
 
-		writer.add_scalars('loss', {'train': train_loss, 'val{}': val_loss}, global_step=epoch)
-		writer.add_scalars('acc1', {'train': train_acc1, 'val{}': val_acc1}, global_step=epoch)
-		writer.add_scalars('acc5', {'train': train_acc5, 'val{}': val_acc5}, global_step=epoch)
+		loss_logger.set(epoch, val_loss)
+		acc1_logger.set(epoch, val_acc1)
+		acc5_logger.set(epoch, val_acc5)
+
+		writer.add_scalars('loss', {'train{}'.format(opt.suffix): train_loss, 'val{}'.format(opt.suffix): val_loss}, global_step=epoch)
+		writer.add_scalars('acc1', {'train{}'.format(opt.suffix): train_acc1, 'val{}'.format(opt.suffix): val_acc1}, global_step=epoch)
+		writer.add_scalars('acc5', {'train{}'.format(opt.suffix): train_acc5, 'val{}'.format(opt.suffix): val_acc5}, global_step=epoch)
 
 		timer.step()
 
@@ -84,22 +92,9 @@ def main():
 		)
 		sys.stdout.flush()
 
-		save_checkpoint(model, optimizer, epoch, os.path.join(opt.log_dir, 'checkpoint.pth.tar'))
-	save_checkpoint(model, optimizer, epoch, os.path.join(opt.log_dir, 'checkpoint.pth.tar'))
-	save_model(model, os.path.join(opt.log_dir, 'weight_final.pth'))
-
-	save_result({
-		'val': {
-			'loss': val_loss,
-			'acc1': val_acc1,
-			'acc5': val_acc5
-		},
-		'train': {
-			'loss': train_loss,
-			'acc1': train_acc1,
-			'acc5': train_acc5
-		}
-	}, opt.log_dir, opt.result)
+		save_checkpoint(model, optimizer, epoch, os.path.join(opt.log_dir, 'checkpoint{}.pth.tar'.format(opt.suffix)))
+	save_checkpoint(model, optimizer, epoch, os.path.join(opt.log_dir, 'checkpoint{}.pth.tar'.format(opt.suffix)))
+	save_model(model, os.path.join(opt.log_dir, 'weight_final{}.pth'.format(opt.suffix)))
 
 
 if __name__ == '__main__':
