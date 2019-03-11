@@ -11,7 +11,6 @@ __all__ = [
 
 class Logger():
 	def __init__(self, path, num_epochs, time_stamp=None):
-		assert num_epochs > 0
 		self.path = path
 		self.num_epochs = num_epochs
 		if time_stamp is None:
@@ -28,7 +27,6 @@ class Logger():
 		self.save()
 
 	def set(self, epoch, val):
-		assert epoch >= 0 and epoch < self.num_epochs
 		self.df[self.time_stamp][epoch] = val
 		self.save()
 
