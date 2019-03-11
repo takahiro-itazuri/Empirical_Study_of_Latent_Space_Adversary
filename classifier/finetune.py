@@ -14,12 +14,12 @@ warnings.filterwarnings('ignore', '(Possibly )?corrupt EXIF data', UserWarning)
 base = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../')
 sys.path.append(base)
 from misc import *
-from classifier.options import TrainOptions
+from classifier.options import FinetuneOptions
 from classifier.utils import *
 
 
 def main():
-	opt = TrainOptions().parse()
+	opt = FinetuneOptions().parse()
 
 	# dataset
 	train_dataset = get_dataset(opt.dataset, train=True, input_size=opt.input_size, num_samples=opt.num_samples)
@@ -30,17 +30,22 @@ def main():
 	opt.num_classes = len(labels)
 
 	# model
-	model = get_classifier(opt.arch, opt.num_classes, opt.pretrained).to(opt.device)
+	pretrained_num_classes = len(get_labels(opt.pretrained_dataset))
+	model = get_classifier(opt.arch, pretrained_num_classes, opt.pretrained)
+
+	if opt.weight is not None:
+		load_model(model, opt.weight)
+	
+	replace_final_fc(opt.arch, model, opt.num_classes)
+	model = model.to(opt.device)
 
 	# optimizer
 	optimizer = optim.SGD(model.parameters(), opt.lr, momentum=opt.momentum, weight_decay=opt.wd)
 	scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=opt.step_size, gamma=opt.gamma)
 
-	# resume from checkpoint
+	# load checkpoint for resume
 	if opt.checkpoint is not None:
 		opt.last_epoch = load_checkpoint(model, optimizer, opt.checkpoint)
-	elif opt.weight is not None:
-		load_model(model, opt.weight)
 
 	# data parallel
 	if opt.cuda and torch.cuda.device_count() > 1:
@@ -54,18 +59,10 @@ def main():
 
 	# train
 	writer = SummaryWriter(os.path.join(opt.log_dir, 'runs'))
-	time_stamp = get_time_stamp()
-	loss_logger = Logger(os.path.join(opt.log_dir, 'loss.csv'), opt.num_epochs, time_stamp)
-	acc1_logger = Logger(os.path.join(opt.log_dir, 'acc1.csv'), opt.num_epochs, time_stamp)
-	acc5_logger = Logger(os.path.join(opt.log_dir, 'acc5.csv'), opt.num_epochs, time_stamp)
 	for epoch in range(opt.last_epoch+1, opt.num_epochs+1):
 		scheduler.step(epoch - 1) # scheduler's epoch is 0-indexed.
 		train_loss, train_acc1, train_acc5 = train(model, train_loader, criterion, optimizer, scheduler, opt)
 		val_loss, val_acc1, val_acc5 = validate(model, val_loader, criterion, opt)
-
-		loss_logger.set(epoch, val_loss)
-		acc1_logger.set(epoch, val_acc1)
-		acc5_logger.set(epoch, val_acc5)
 
 		writer.add_scalars('loss', {'train{}'.format(opt.suffix): train_loss, 'val{}'.format(opt.suffix): val_loss}, global_step=epoch)
 		writer.add_scalars('acc1', {'train{}'.format(opt.suffix): train_acc1, 'val{}'.format(opt.suffix): val_acc1}, global_step=epoch)
